@@ -26,6 +26,8 @@ public class MainActivity extends Activity {
     final int CAMERA_ID = 0;
     final boolean FULL_SCREEN = true;
 
+
+    // Richten Activity so ein, dass es keine Kopfzeile hat und in Vollbild angezeigt wird.
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -34,14 +36,23 @@ public class MainActivity extends Activity {
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.main);
 
+        //Deklarieren den Surface
+        //Bekommen seinen Holder
+        //Bestimmen seinen Typ
         sv = (SurfaceView) findViewById(R.id.surfaceView);
         holder = sv.getHolder();
         holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
+        //Erzeugen das Objekt holderCallback
+        //Durch das der Holder uns von dem Surface berichtet
         holderCallback = new HolderCallback();
         holder.addCallback(holderCallback);
     }
 
+
+    // Bekommen den Zugang zu der Kamera (mithilfe der Methode "open") und übergeben die ID (falls wir mehrere Kameras haben (Front und Rück))
+    // Theoretisch brauchen wir für unsere AG App immer nur die Rückkamera, also könnten wir hier auch einfach die Funktion "open" ohne Parameter aufrufen.
+    // Die Funktion setPreviewSize ist weiter unten definiert, sie stellt die richtige Größe des "Surfes" ein
     @Override
     protected void onResume() {
         super.onResume();
@@ -49,6 +60,7 @@ public class MainActivity extends Activity {
         setPreviewSize(FULL_SCREEN);
     }
 
+    // Gibt die Kamera frei (mithilfe der Methode "release", so dass andere Apps sie benutzen können
     @Override
     protected void onPause() {
         super.onPause();
@@ -57,24 +69,32 @@ public class MainActivity extends Activity {
         camera = null;
     }
 
+    // Die Klasse HolderCallback implementiert das Interface  SurfaceHolder.Callback. (durch das der Holder uns von dem Surface berichtet)
     class HolderCallback implements SurfaceHolder.Callback {
 
+        //Surface wird erzeugt.
         @Override
         public void surfaceCreated(SurfaceHolder holder) {
             try {
+                // Übergeben der Kamera das Objekt "Holder"
                 camera.setPreviewDisplay(holder);
+                // Beginnen mit der Bild Übertragung
                 camera.startPreview();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
 
+        // Wenn das Format oder die Größe des Surfaces sich ändert
         @Override
         public void surfaceChanged(SurfaceHolder holder, int format, int width,
                                    int height) {
+            // Dafür stoppen wir zuerst die Bild Übertragung
             camera.stopPreview();
+            // Richten die Kamera (im Hinblick auf die Drehung) richtig ein
             setCameraDisplayOrientation(CAMERA_ID);
             try {
+                // Und starten erneut die Bild Übertragung
                 camera.setPreviewDisplay(holder);
                 camera.startPreview();
             } catch (Exception e) {
@@ -82,18 +102,22 @@ public class MainActivity extends Activity {
             }
         }
 
+        // Die Funktion benutzen wir nicht
         @Override
         public void surfaceDestroyed(SurfaceHolder holder) {
 
         }
-
     }
 
+
+    // ?!
     void setPreviewSize(boolean fullScreen) {
 
+        //Bekommen die Größe des Displays
         Display display = getWindowManager().getDefaultDisplay();
         boolean widthIsMax = display.getWidth() > display.getHeight();
 
+        //Finden die Größe der Preview Camera heraus
         Size size = camera.getParameters().getPreviewSize();
 
         RectF rectDisplay = new RectF();
@@ -123,6 +147,7 @@ public class MainActivity extends Activity {
     }
 
     void setCameraDisplayOrientation(int cameraId) {
+        // Finden heraus wie stark der Display rotiert wurde von dem normalen Zustand (DefaultDisplay)
         int rotation = getWindowManager().getDefaultDisplay().getRotation();
         int degrees = 0;
         switch (rotation) {
@@ -144,10 +169,11 @@ public class MainActivity extends Activity {
 
         CameraInfo info = new CameraInfo();
         Camera.getCameraInfo(cameraId, info);
-
+        // Rück Kamera
         if (info.facing == CameraInfo.CAMERA_FACING_BACK) {
             result = ((360 - degrees) + info.orientation);
         } else
+            // Front Kamera
             if (info.facing == CameraInfo.CAMERA_FACING_FRONT) {
                 result = ((360 - degrees) - info.orientation);
                 result += 360;
@@ -156,3 +182,4 @@ public class MainActivity extends Activity {
         camera.setDisplayOrientation(result);
     }
 }
+
